@@ -93,8 +93,22 @@ def encrypt(message_path, key_path, output_path):
             byte = key_file.read(1)
             while byte != b'':
                 bytes_array_key.append(byte)
-                byte = key_file.read(1)
+                byte = key_file.read(1) #
 
+
+    output_list = []
+    if len(bytes_array_message) > 2:
+        for i in range(0, len(bytes_array_message), 2):
+            output_list.append([bytes_array_message[i], bytes_array_message[i + 1]])
+
+        for k in range(len(output_list)):
+            state = help_enc(output_list[k], bytes_array_key[:2])
+            to_write_byte = help_enc(state, bytes_array_key[2:])
+            with open(output_path, mode='ab') as file:
+                for change in to_write_byte:
+                    print(change)
+                    file.write(change)
+    else:
         state = help_enc(bytes_array_message, bytes_array_key[:2])
         to_write_byte = help_enc(state, bytes_array_key[2:])
         with open(output_path, mode='wb') as file:
