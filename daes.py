@@ -94,9 +94,7 @@ def help_dec(cipher, key):
     # decrypt C
     int_key_list = [ord(byte) for byte in key]
     cipher = [ord(item) for item in cipher]
-    new_cipher = [0, 0]
-    new_cipher[1] = cipher[0]
-    new_cipher[0] = (cipher[1] ^ cipher[0] ^ int_key_list[0])
+    new_cipher = [(cipher[1] ^ cipher[0] ^ int_key_list[0]), cipher[0]]
 
     # decrypt Add round key
     new_cipher = [new_cipher[0] ^ int_key_list[0], new_cipher[1] ^ int_key_list[1]]
@@ -142,5 +140,5 @@ def palainAttack(m1p, c1p, m2p, c2p):
     return 0
 
 
-# encrypt("to_break_message_2.txt", "keys_1.txt", "output_path.txt")
-decrypt("cipher_short.txt", "keys_short.txt", "output_path.txt")
+# encrypt("message_long.txt", "keys_long.txt", "output_path.txt")
+decrypt("cipher_long.txt", "keys_long.txt", "output_path.txt")
