@@ -1,5 +1,6 @@
 import cryptography
 from cryptography.fernet import Fernet
+from pip._vendor import chardet
 
 s_box = (
     0x63, 0x7C, 0x77, 0x7B, 0xF2, 0x6B, 0x6F, 0xC5, 0x30, 0x01, 0x67, 0x2B, 0xFE, 0xD7, 0xAB, 0x76,
@@ -40,90 +41,49 @@ inv_s_box = (
 
 
 def help_enc(message, key):
-    start, end = 0, 0
     ciphered = []
-    for i in range(int(len(message) / 16)):  # 16*8
-        cBlock = [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]
-        start = end
-        end = (i + 1) * 16
-        for row in range(4):
-            for col in range(4):
-                cBlock[row][col] = s_box[((i % 4) * 4 + row) * 16 + ((i % 4) * 4 + col)]
-        ciphered.append(cBlock)
-    for roundK in ciphered:
-        for c_row in range(4):
-            for c_col in range(4):
-                roundK[c_row][c_col] = roundK[c_row][c_col] ^ key[4 * c_row + c_col]
+    # subBytes
+    for i in range(2):
+        ciphered.append(s_box[ord(message[i])])
+    int_key_list = [ord(byte) for byte in key]
 
-    right = []
-    left = []
-    if len(ciphered) % 2 == 0:
-        for r in range(len(ciphered)):
-            if r < len(ciphered) / 2:
-                left.append(ciphered[r][0:2])
-                left.append(ciphered[r][2:])
-            else:
-                right.append(ciphered[r[0:2]])
-                right.append(ciphered[r][2:0])
-    else:
-        for lef in range(len(ciphered)):
-            if lef < (len(ciphered) - 1) / 2:
-                left.append(ciphered[lef][0:2])
-                left.append(ciphered[lef][2:0])
-            if lef > (len(ciphered) - 1) / 2:
-                right.append(ciphered[lef][0:2])
-                right.append(ciphered[lef][2:])
-            else:
-                left.append(ciphered[lef][0:2])
-                right.append(ciphered[lef][2:])
-    final_left = right
-    final_right = []
-    for finalR in range(len(ciphered)):
-        temp = [[0, 0, 0, 0], [0, 0, 0, 0]]
-        for row_element in range(2):
-            for col_element in range(4):
-                temp[row_element][col_element] = left[finalR][row_element][col_element] ^ right[finalR][row_element][
-                    col_element] ^ key[row_element * 4 + col_element]
-        final_right.append(temp)
-    cyphered = []
-    for dl in range(len(ciphered)):
-        for row_element_dl in range(2):
-            for col_element_dl in range(4):
-                cyphered.append(final_left[dl][row_element_dl][col_element_dl])
-    for dr in range(len(ciphered)):
-        for row_element_dr in range(2):
-            for col_element_dr in range(4):
-                cyphered.append(final_right[dr][row_element_dr][col_element_dr])
+    # add round key (xor)
+    result = [ciphered[0] ^ int_key_list[0], ciphered[1] ^ int_key_list[1]]
 
-    return cyphered
+    # C
+    idx1 = result[1]
+    result[1] = (result[0] ^ result[1] ^ int_key_list[0])
+    result[0] = idx1
+
+    return [bytes([item]) for item in result]
 
 
 def encrypt(message_path, key_path, output_path):
     with open(message_path, 'rb') as message_file:
-        bitsArrayMessage = []
-        bytes = message_file.read(1)
-        while bytes != b'':
-            bits = bin(ord(bytes))[2:].zfill(8)
-            bitsArrayMessage.extend([int(bit) for bit in bits])
-            bytes = message_file.read(1)
+        bytes_array_message = []
+        byte = message_file.read(1)
+        while byte != b'':
+            bytes_array_message.append(byte)
+            byte = message_file.read(1)
         with open(key_path, 'rb') as key_file:
-            bitsArrayKey = []
-            bytesk = key_file.read(1)
-            while bytesk != b'':
-                bits = bin(ord(bytesk))[2:].zfill(8)
-                bitsArrayKey.extend([int(bit) for bit in bits])
-                bytesk = key_file.read(1)
-        state = help_enc(bitsArrayMessage, bitsArrayKey[:16])
-        to_write_bit = help_enc(state, bitsArrayKey[:16])
-        bitschunck = [to_write_bit[v:v + 8] for v in range(0, len(to_write_bit), 8)]
-        with open(output_path, "wb") as file:
-            for change in bitschunck:
-                print(change)
-                bits = bytes(change)
-                # bit_string = ''.join(str(bit) for bit in bits)
-                # print(bit_string)
-                # towrite = int(bit_string, 10).to_bytes((len(bit_string) + 7) // 8, byteorder='big')
-                file.write(towrite)
+            bytes_array_key = []
+            byte = key_file.read(1)
+            while byte != b'':
+                bytes_array_key.append(byte)
+                byte = key_file.read(1)
+
+
+    output_list = []
+    for i in range(0, len(bytes_array_message), 2):
+        output_list.append([bytes_array_message[i], bytes_array_message[i + 1]])
+
+    for k in range(len(output_list)):
+        state = help_enc(output_list[k], bytes_array_key[:2])
+        to_write_byte = help_enc(state, bytes_array_key[2:])
+        with open(output_path, mode='ab') as file:
+            for change in to_write_byte:
+                file.write(change)
+
 
 
 
@@ -131,20 +91,120 @@ def encrypt(message_path, key_path, output_path):
 
 
 def help_dec(cipher, key):
-    return 0
+    # decrypt C
+    int_key_list = [ord(byte) for byte in key]
+    cipher = [ord(item) for item in cipher]
+    new_cipher = [(cipher[1] ^ cipher[0] ^ int_key_list[0]), cipher[0]]
+
+    # decrypt Add round key
+    new_cipher = [new_cipher[0] ^ int_key_list[0], new_cipher[1] ^ int_key_list[1]]
+
+    # invSubBytes
+    result = [inv_s_box[new_cipher[0]], inv_s_box[new_cipher[1]]]
+
+    return [bytes([item]) for item in result]
 
 
 def decrypt(cipher_path, key_path, output_path):
-    #  plaintext = cipher.decrypt(ciphertext).decode()
-    return 0  # plaintext
+    with open(cipher_path, 'rb') as cipher_file:
+        bytes_array_cipher = []
+        byte = cipher_file.read(1)
+        while byte != b'':
+            bytes_array_cipher.append(byte)
+            byte = cipher_file.read(1)
+        with open(key_path, 'rb') as key_file:
+            bytes_array_key = []
+            byte = key_file.read(1)
+            while byte != b'':
+                bytes_array_key.append(byte)
+                byte = key_file.read(1)
 
 
-def palainAttack(m1p, c1p, m2p, c2p):
-    # read as bits
-    # with open('filename', 'rb') as file:
-    #     data = file.read()
-    #     bits = ''.join(format(byte, '08b') for byte in data)
-    return 0
+    output_list = []
+    for i in range(0, len(bytes_array_cipher), 2):
+        output_list.append([bytes_array_cipher[i], bytes_array_cipher[i + 1]])
+
+    for k in range(len(output_list)):
+        state = help_dec(output_list[k], bytes_array_key[2:])
+        to_write_byte = help_dec(state, bytes_array_key[:2])
+        with open(output_path, mode='ab') as file:
+            for change in to_write_byte:
+                file.write(change)
 
 
-encrypt("message_short.txt", "keys_short.txt", "output_path.txt")
+def palainAttack(m1p, c1p, m2p, c2p,key_path): #palainAttack(m1p, c1p, m2p, c2p):
+    keys = [pk.to_bytes(1, byteorder='big') for pk in range(2**8)]
+    bytes_array_message1 = []
+    bytes_array_c1 = []
+    with open(m1p, 'rb') as message1_file:
+        byte = message1_file.read(1)
+        while byte != b'':
+            bytes_array_message1.append(byte)
+            byte = message1_file.read(1)
+        with open(c1p, 'rb') as c1_file:
+            byte = c1_file.read(1)
+            while byte != b'':
+                bytes_array_c1.append(byte)
+                byte = c1_file.read(1)
+    messag1 = []
+    cipher1 = []
+    cipheredDict = {}
+    plainDict= {}
+    for i in range(0, len(bytes_array_message1), 2):
+        messag1.append([bytes_array_message1[i], bytes_array_message1[i + 1]])
+    for j in range(0, len(bytes_array_c1), 2):
+        cipher1.append([bytes_array_c1[j], bytes_array_c1[j + 1]])
+    for key in keys:
+        check_cipher = []
+        check_plain = []
+        for msg in messag1:
+            check_cipher += help_enc(msg, [key,key])
+        cipheredDict[tuple(check_cipher)] = key
+        for ciph in cipher1:
+            check_plain += help_dec(ciph, [key,key])
+        plainDict[tuple(check_plain)] = key
+    matchingKeys = []
+    for plainTxt in plainDict:
+        if plainTxt in cipheredDict:
+            key_2 = plainDict[plainTxt]
+            key_1 = cipheredDict[plainTxt]
+            matchingKeys.append((key_1, key_2))
+    bytes_array_message2 = []
+    bytes_array_c2 = []
+    with open(m2p, 'rb') as message2_file:
+        byte = message2_file.read(1)
+        while byte != b'':
+            bytes_array_message2.append(byte)
+            byte = message2_file.read(1)
+        with open(c2p, 'rb') as c2_file:
+            byte = c2_file.read(1)
+            while byte != b'':
+                bytes_array_c2.append(byte)
+                byte = c2_file.read(1)
+    messag2 = []
+    cipher2 = []
+    for i in range(0, len(bytes_array_message2), 2):
+        messag2.append([bytes_array_message2[i], bytes_array_message2[i + 1]])
+    for j in range(0, len(bytes_array_c2), 2):
+        cipher2.append([bytes_array_c2[j], bytes_array_c2[j + 1]])
+    to_write = []
+    for key in matchingKeys:
+        check_cipher = []
+        check_plain = []
+        for msg in messag2:
+            check_cipher += help_enc(msg, [key[0], key[0]])
+        for ciph in cipher2:
+            check_plain += help_dec(ciph, [key[1], key[1]])
+        if(check_cipher==check_plain):
+            to_write = [key[0],key[1]]
+            break
+    print(to_write)
+    with open(key_path, mode='ab') as file:
+        for w in range(2):
+            for change in to_write[w]:
+                print(bytes([change]))
+                file.write(bytes([change]))
+
+#encrypt("message_long.txt", "keys_long.txt", "output_path.txt")
+#decrypt("cipher_long.txt", "keys_long.txt", "output_path.txt","key_path.txt")
+palainAttack("to_break_message_1.txt", "to_break_cipher_1.txt","to_break_message_2.txt", "to_break_cipher_2.txt","key_path.txt")
