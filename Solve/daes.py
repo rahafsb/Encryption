@@ -1,4 +1,5 @@
 import argparse
+import sys
 
 s_box = (
     0x63, 0x7C, 0x77, 0x7B, 0xF2, 0x6B, 0x6F, 0xC5, 0x30, 0x01, 0x67, 0x2B, 0xFE, 0xD7, 0xAB, 0x76,
@@ -208,20 +209,10 @@ def palinAttack(m1p, c1p, m2p, c2p, key_path):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Encrypt or decrypt a message using a given key or Plaintext attack it')
-    parser.add_argument('-e', action='store_true', help='Encrypt the Message')
-    parser.add_argument('-d', action='store_true', help='Decrypt the Ciphertext')
-    parser.add_argument('-b', action='store_true', help='Perform plaintext attack')
-    parser.add_argument('input_path', type=str, help='Path to message or ciphertext file')
-    parser.add_argument('key_path', type=str, help='Path to the keys file')
-    parser.add_argument('output_path', type=str, help='Path to the output file')
-    parser.add_argument('input_path2', type=str, help='Path to message or ciphertext file')
-    parser.add_argument('output_path2', type=str, help='Path to the output file')
-    args = parser.parse_args()
-    if args.e:
-        encrypt(args.input_path, args.key_path, args.output_path)
-    elif args.d:
-        decrypt(args.input_path, args.key_path, args.output_path)
-    elif args.b:
-        palinAttack(args.input_path, args.key_path, args.output_path, args.input_path2, args.output_path2)
+    if sys.argv[1] == "-e":
+        encrypt(sys.argv[2], sys.argv[3], sys.argv[4])
+    elif sys.argv[1] == "-d":
+        decrypt(sys.argv[2], sys.argv[3], sys.argv[4])
+    elif sys.argv[1] == "-b":
+        palinAttack(sys.argv[2], sys.argv[3], sys.argv[4],sys.argv[5], sys.argv[6])
 
