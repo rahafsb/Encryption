@@ -59,6 +59,7 @@ def help_enc(message, key):
 
 
 def encrypt(message_path, key_path, output_path):
+    # read files (to list of bytes)
     with open(message_path, 'rb') as message_file:
         bytes_array_message = []
         byte = message_file.read(1)
@@ -72,22 +73,18 @@ def encrypt(message_path, key_path, output_path):
                 bytes_array_key.append(byte)
                 byte = key_file.read(1)
 
-
+    # convert to a list of 2 bytes
     output_list = []
     for i in range(0, len(bytes_array_message), 2):
         output_list.append([bytes_array_message[i], bytes_array_message[i + 1]])
 
+    # encrypt and write to file
     for k in range(len(output_list)):
         state = help_enc(output_list[k], bytes_array_key[:2])
-        to_write_byte = help_enc(state, bytes_array_key[2:])
+        to_write_bytes = help_enc(state, bytes_array_key[2:])
         with open(output_path, mode='ab') as file:
-            for change in to_write_byte:
+            for change in to_write_bytes:
                 file.write(change)
-
-
-
-
-
 
 
 def help_dec(cipher, key):
@@ -106,6 +103,7 @@ def help_dec(cipher, key):
 
 
 def decrypt(cipher_path, key_path, output_path):
+    # read files (to list of bytes)
     with open(cipher_path, 'rb') as cipher_file:
         bytes_array_cipher = []
         byte = cipher_file.read(1)
@@ -119,11 +117,12 @@ def decrypt(cipher_path, key_path, output_path):
                 bytes_array_key.append(byte)
                 byte = key_file.read(1)
 
-
+    # convert to a list of 2 bytes
     output_list = []
     for i in range(0, len(bytes_array_cipher), 2):
         output_list.append([bytes_array_cipher[i], bytes_array_cipher[i + 1]])
 
+    # decrypt and write to file
     for k in range(len(output_list)):
         state = help_dec(output_list[k], bytes_array_key[2:])
         to_write_byte = help_dec(state, bytes_array_key[:2])
@@ -132,13 +131,69 @@ def decrypt(cipher_path, key_path, output_path):
                 file.write(change)
 
 
-def palainAttack(m1p, c1p, m2p, c2p):
-    # read as bits
-    # with open('filename', 'rb') as file:
-    #     data = file.read()
-    #     bits = ''.join(format(byte, '08b') for byte in data)
-    return 0
+def read_file(m, c):
+    # read both the message and the cipher files and return them as a list of lists of 2 bytes
+    bytes_array_message = []
+    bytes_array_c = []
+    message = []
+    cipher = []
+    with open(m, 'rb') as message1_file:
+        byte = message1_file.read(1)
+        while byte != b'':
+            bytes_array_message.append(byte)
+            byte = message1_file.read(1)
+        with open(c, 'rb') as c1_file:
+            byte = c1_file.read(1)
+            while byte != b'':
+                bytes_array_c.append(byte)
+                byte = c1_file.read(1)
+    for i in range(0, len(bytes_array_message), 2):
+        message.append([bytes_array_message[i], bytes_array_message[i + 1]])
+    for j in range(0, len(bytes_array_c), 2):
+        cipher.append([bytes_array_c[j], bytes_array_c[j + 1]])
+    return message, cipher
+
+
+def palinAttack(m1p, c1p, m2p, c2p, key_path):
+    # make a list of all possible keys
+    keys = [pk.to_bytes(1, byteorder='big') for pk in range(2**8)]
+    message1, cipher1 = read_file(m1p, c1p)
+    cipheredDict = {}
+    plainDict = {}
+    for key in keys:
+        check_cipher = []
+        check_plain = []
+        for msg in message1:
+            check_cipher += help_enc(msg, [key,key])
+        cipheredDict[tuple(check_cipher)] = key
+        for ciph in cipher1:
+            check_plain += help_dec(ciph, [key,key])
+        plainDict[tuple(check_plain)] = key
+    matchingKeys = []
+    for plainTxt in plainDict:
+        if plainTxt in cipheredDict:
+            key_2 = plainDict[plainTxt]
+            key_1 = cipheredDict[plainTxt]
+            matchingKeys.append((key_1, key_2))
+
+    message2, cipher2 = read_file(m2p, c2p)
+    to_write = []
+    for key in matchingKeys:
+        check_cipher = []
+        check_plain = []
+        for msg in message2:
+            check_cipher += help_enc(msg, [key[0], key[0]])
+        for ciph in cipher2:
+            check_plain += help_dec(ciph, [key[1], key[1]])
+        if check_cipher == check_plain:
+            to_write = [key[0],key[1]]
+            break
+    with open(key_path, mode='ab') as file:
+        for w in range(2):
+            for change in to_write[w]:
+                file.write(bytes([change]))
 
 
 # encrypt("message_long.txt", "keys_long.txt", "output_path.txt")
-decrypt("cipher_long.txt", "keys_long.txt", "output_path.txt")
+# decrypt("to_break_cipher_2.txt", "keys_1.txt", "output_path.txt")
+# palinAttack("to_break_message_1.txt", "to_break_cipher_1.txt", "to_break_message_2.txt", "to_break_cipher_2.txt", "output_path.txt")
