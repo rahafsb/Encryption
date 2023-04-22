@@ -36,6 +36,9 @@ inv_s_box = (
     0xA0, 0xE0, 0x3B, 0x4D, 0xAE, 0x2A, 0xF5, 0xB0, 0xC8, 0xEB, 0xBB, 0x3C, 0x83, 0x53, 0x99, 0x61,
     0x17, 0x2B, 0x04, 0x7E, 0xBA, 0x77, 0xD6, 0x26, 0xE1, 0x69, 0x14, 0x63, 0x55, 0x21, 0x0C, 0x7D,
 )
+def delete_file(path):
+    with open(path, "w") as f:
+        pass
 
 
 def help_enc(message, key):
@@ -57,6 +60,8 @@ def help_enc(message, key):
 
 
 def encrypt(message_path, key_path, output_path):
+    # delet what is in the file first
+    delete_file(output_path)
     # read files (to list of bytes)
     with open(message_path, 'rb') as message_file:
         bytes_array_message = []
@@ -101,6 +106,8 @@ def help_dec(cipher, key):
 
 
 def decrypt(cipher_path, key_path, output_path):
+    #delet what is in the file first
+    delete_file(output_path)
     # read files (to list of bytes)
     with open(cipher_path, 'rb') as cipher_file:
         bytes_array_cipher = []
@@ -153,6 +160,8 @@ def read_file(m, c):
 
 
 def palinAttack(m1p, c1p, m2p, c2p, key_path):
+    #dlete what is in the keys path first
+    delete_file(key_path)
     # make a list of all possible keys
     keys = [pk.to_bytes(1, byteorder='big') for pk in range(2**8)]
     message1, cipher1 = read_file(m1p, c1p)
@@ -206,11 +215,13 @@ if __name__ == '__main__':
     parser.add_argument('input_path', type=str, help='Path to message or ciphertext file')
     parser.add_argument('key_path', type=str, help='Path to the keys file')
     parser.add_argument('output_path', type=str, help='Path to the output file')
+    parser.add_argument('input_path2', type=str, help='Path to message or ciphertext file')
+    parser.add_argument('output_path2', type=str, help='Path to the output file')
     args = parser.parse_args()
     if args.e:
         encrypt(args.input_path, args.key_path, args.output_path)
     elif args.d:
         decrypt(args.input_path, args.key_path, args.output_path)
     elif args.b:
-        palinAttack(args.input_path, args.key_path, args.input_path, args.key_path, args.output_path)
+        palinAttack(args.input_path, args.key_path, args.output_path, args.input_path2, args.output_path2)
 
