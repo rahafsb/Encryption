@@ -1,6 +1,4 @@
-import cryptography
-from cryptography.fernet import Fernet
-from pip._vendor import chardet
+import argparse
 
 s_box = (
     0x63, 0x7C, 0x77, 0x7B, 0xF2, 0x6B, 0x6F, 0xC5, 0x30, 0x01, 0x67, 0x2B, 0xFE, 0xD7, 0xAB, 0x76,
@@ -197,3 +195,21 @@ def palinAttack(m1p, c1p, m2p, c2p, key_path):
 # encrypt("message_long.txt", "keys_long.txt", "output_path.txt")
 # decrypt("to_break_cipher_2.txt", "keys_1.txt", "output_path.txt")
 # palinAttack("to_break_message_1.txt", "to_break_cipher_1.txt", "to_break_message_2.txt", "to_break_cipher_2.txt", "output_path.txt")
+
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Encrypt or decrypt a message using a given key or Plaintext attack it')
+    parser.add_argument('-e', action='store_true', help='Encrypt the Message')
+    parser.add_argument('-d', action='store_true', help='Decrypt the Ciphertext')
+    parser.add_argument('-p', action='store_true', help='Plaintext attack')
+    parser.add_argument('input_path', type=str, help='Path to message or ciphertext file')
+    parser.add_argument('key_path', type=str, help='Path to the keys file')
+    parser.add_argument('output_path', type=str, help='Path to the output file')
+    args = parser.parse_args()
+    if args.e:
+        encrypt(args.input_path, args.key_path, args.output_path)
+    elif args.d:
+        decrypt(args.input_path, args.key_path, args.output_path)
+    elif args.p:
+        palinAttack(args.input_path1, args.input_path2, args.input_path3, args.input_path4, args.key_path)
