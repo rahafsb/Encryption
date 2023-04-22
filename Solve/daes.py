@@ -202,7 +202,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Encrypt or decrypt a message using a given key or Plaintext attack it')
     parser.add_argument('-e', action='store_true', help='Encrypt the Message')
     parser.add_argument('-d', action='store_true', help='Decrypt the Ciphertext')
-    parser.add_argument('-p', action='store_true', help='Plaintext attack')
+    parser.add_argument('-b', action='store_true', help='Perform plaintext attack')
     parser.add_argument('input_path', type=str, help='Path to message or ciphertext file')
     parser.add_argument('key_path', type=str, help='Path to the keys file')
     parser.add_argument('output_path', type=str, help='Path to the output file')
@@ -211,5 +211,6 @@ if __name__ == '__main__':
         encrypt(args.input_path, args.key_path, args.output_path)
     elif args.d:
         decrypt(args.input_path, args.key_path, args.output_path)
-    elif args.p:
-        palinAttack(args.input_path1, args.input_path2, args.input_path3, args.input_path4, args.key_path)
+    elif args.b:
+        palinAttack(args.input_path, args.key_path, args.input_path, args.key_path, args.output_path)
+
