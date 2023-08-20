@@ -19,17 +19,17 @@ Double DAES Decryption:<br>
 M = Decryption(Decryption(C, K2), K1)<br><br><br>
 
 
-python daes.py -e <message path> <key path> <output path><br>
+python daes.py -e message path key path output path <br>
   message path - location of the file where the message you want to encrypt is located.<br>
   key path - the file location of the encryption keys, the keys are chained one after the other.<br>
   output path - the location of the file to which you must write the encryption output.<br><br><br>
 
-python daes.py -d <cipher path> <key path> <output path><br>
+python daes.py -d cipher path key path output path <br>
   cipher path - the location of the file where the encrypted message is located<br>
   key path - the location of the file where the encryption keys are located, the keys are chained one after the other.<br>
   output path - the location of the file to which you must write the decoding output<br><br><br>
 
-python daes.py -b <message1 path> <cipher1 path> <message2 path> <cipher2 path> <key path> <br>
+python daes.py -b message1 path cipher1 path message2 path cipher2 path key path <br>
   message path - the location of the file where the text of the original messages is written <br>
   cipher path - the location of the file where the encryption result of the messages is written<br>
   key path - the location of the file where you must write what you discovered about the encryption keys. 
